@@ -1,0 +1,89 @@
+_schema-version: 3.3.0
+ID: Sales_order_mgmt
+description: A simple CAP project.
+version: 1.0.0
+modules:
+- name: Sales_order_mgmt-srv
+  type: nodejs
+  path: gen/srv
+  requires:
+  - name: Sales_order_mgmt-db
+  provides:
+  - name: srv-api
+    properties:
+      srv-url: ${default-url}
+  parameters:
+    buildpack: nodejs_buildpack
+    instances: 1
+  build-parameters:
+    builder: npm-ci
+- name: Sales_order_mgmt-db-deployer
+  type: hdb
+  path: gen/db
+  requires:
+  - name: Sales_order_mgmt-db
+  parameters:
+    buildpack: nodejs_buildpack
+- name: Sales_order_mgmt-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: Sales_order_mgmt-repo-host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - salesordersalesorder.zip
+      name: salesordersalesorder
+      target-path: resources/
+- name: salesordersalesorder
+  type: html5
+  path: app/salesorder
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: Sales_order_mgmt-db
+  type: com.sap.xs.hdi-container
+  parameters:
+    service: hana
+    service-plan: hdi-shared
+- name: Sales_order_mgmt-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: Sales_order_mgmt-html5-service
+    service-plan: app-host
+- name: Sales_order_mgmt-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: false
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: Sales_order_mgmt-destination-service
+    service-plan: lite
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm ci
+    - npx cds build --production

@@ -1,0 +1,17 @@
+
+@server = http://localhost:4004
+
+### 1. Read all customers
+GET {{server}}/odata/v4/sales/Customers
+
+### 2. Read all products
+GET {{server}}/odata/v4/sales/Products
+
+### 3. Customer with their orders
+GET {{server}}/odata/v4/sales/Customers?$expand=orders
+
+### 4. Order with customer and items
+GET {{server}}/odata/v4/sales/Orders?$expand=customer,items($expand=product($select=name))
+
+
+
